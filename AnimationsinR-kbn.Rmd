@@ -1,0 +1,162 @@
+---
+title: "Animations in R"
+author: Kanishka Narayan (kbn)
+contents: This module contains code for the following,
+           1) Animation of scatterplot showing life expectancy and GDP percapita from 1961-2015.The size               of the bubbles represents the size of the working population in the country. The animation               also traces three countries in particular (USA, China and India)  
+           2) Animation showing percent of countries achieveing SDGs across regions under SSP2, across                times using the classic gganimate package. The user can choose any of the 9 SDGs. 
+           3) Animation showing percent of countries achieveing SDGs across regions under SSP2, across                times using the classic gganimate package along with the geom tile package. The user can                choose any of the 9 SDGs. 
+           4) Animation of scatterplots showing life expectancy and GDP per capita across regions using               the gapminder dataset .
+files required: Please download the files SSP2data.xlsx and ForR.xlsx and save the same to a folder                     named Rfiles located in "C:\Users\Public\Rfiles"
+R packages required: ggplot2,gganimate,readxl,dplyr,tweenr,tidyverse,readxl,tibble,ggstance,gapminder
+In case of questions contact: Kanishka Narayan (kanishkan91@gmail.com)
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+```{r, libraries required for this package}
+library(ggplot2)
+library(gganimate)
+library(readxl)
+library (dplyr)
+library(tweenr)
+library(tidyverse)
+library(readxl)
+library(tibble)
+library(ggstance)
+library(gapminder)
+
+
+
+
+```
+
+```{r, Scatterplot of Life expectancy and GDP per capita PPP}
+
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, fig.show = "animate")
+
+#ReadData
+
+ForR <- read_excel("C:/Users/Public/Rfiles/ForR.xlsx", 
+    sheet = "Sheet1")
+Base_Data<- data.frame(ForR)
+Base_Data$Region<-rep("Regression for the World",nrow(Base_Data))
+
+theme_set(theme_bw())
+
+
+g<- ggplot(Base_Data,aes(GDP2011PCPPP,LifExpectI,frame=Year,size=WorkPop,col=Continent))+
+    geom_point(aes(size=WorkPop))+
+    geom_text(data=subset(ForR,Country=='India'|Country=='United States'|Country=='China'),aes(label=Country))+
+    xlim(c(0,18000))+
+    ylim(c(40,84))+
+    geom_smooth(aes(group=(Year)),method="lm",show.legend=TRUE)+
+    labs(title='Life expectancy vs GDP per capita:{1959+frame}',x='Income levels in Thousand USD',y='Average life expectancy')+
+    transition_states(Year,transition_length = 1,state_length = 30)+
+    transition_time(Year)+
+    transition_manual(Year)
+    
+
+
+animate(g,nframes = 100,ref_frame = -1,fps=1,, width = 800, height = 400)
+
+
+```
+
+```{r, Animation of SSP2 achievement across regions}
+
+SSP2Data <- read_excel("C:/Users/Public/Rfiles/SSP2Data.xlsx")
+
+
+SSP<- data.frame(SSP2Data)
+SSP<- subset(SSP,Variable =='Poverty')
+
+
+SSP%>% group_by(GEO.Region)%>% 
+ summarise(CountryTarget= (sum(CountryTarget)))%>%
+ arrange(CountryTarget)
+
+SSP= SSP%>%
+     arrange(Year,(CountryTarget/CountryRegion))%>%
+     mutate(order=1:n())
+
+theme_set(theme_bw())
+
+
+p=SSP %>% 
+ggplot(aes(order, (CountryTarget/CountryRegion)*100,fill=Legend))+
+geom_bar(stat = "identity", alpha = 0.66)+
+labs(caption=SSP$Variable,title='SDGs under SSP2:{closest_state}',x="Rank(Lowest to highest)",y='Percent of countries in region meeting target') +
+theme(plot.title = element_text(hjust = 1, size = 22))+
+scale_x_continuous(breaks=SSP$order, labels= SSP$Name) +
+geom_text(aes(label=SSP$GEO.Region),vjust=0)+  
+transition_states(Year, 
+                    transition_length = 1, state_length = 60) +
+view_follow(fixed_y=TRUE) +  
+ease_aes('linear')
+
+animate(p,nframes=60,fps=1,, width = 800, height = 400)
+```
+
+
+```{r, Animation of SSP achievement using geomtile}
+
+
+library(readxl)
+SSP2Data <- read_excel("C:/Users/Public/Rfiles/SSP2Data.xlsx")
+
+
+SSP<- data.frame(SSP2Data)
+SSP<- subset(SSP,Variable =="Poverty")
+
+
+SSP= SSP%>%
+     group_by(Year)%>%
+    mutate(ordering = min_rank(CountryTarget/CountryRegion) * 1.0) %>%
+  ungroup()
+
+p=SSP %>% 
+ggplot(aes(ordering, group=GEO.Region))+
+geom_tile(aes(y = ((CountryTarget/CountryRegion)*100)/2, 
+                height = (CountryTarget/CountryRegion)*100,
+                width = 0.9,fill=Legend), alpha = 0.9,position='identity')+
+
+geom_text(aes(y=(CountryTarget/CountryRegion)*100,label=SSP$GEO.Region),vjust=-0.5)+
+geom_text(aes(y=0,label=" ",vjust=2))+  
+coord_cartesian(clip = "off", expand = FALSE) +
+labs(caption='Source:International Futures 7.34',title='Poverty:{closest_state}',x=" ",y="Percent of countries",size = 15,vjust=2) +  
+theme(plot.title = element_text(hjust = 0.5,vjust=2.12, size = 22),axis.ticks.x = element_blank(),
+        axis.text.x  = element_blank())+
+transition_states(Year, 
+                    transition_length = 2, state_length = 1) +
+ease_aes('cubic-in-out')
+
+animate(p,nframes=300,fps=20, width = 800, height = 400)
+
+
+```
+
+```{r, Scatterplot of life expectancy and GDP per capita across regions using gapminder dataset}
+
+
+theme_set(theme_bw())  # pre-set the bw theme.
+
+g <- ggplot(gapminder, aes(gdpPercap, lifeExp, size = pop, frame = year)) +
+  geom_point() +
+  geom_smooth(aes(group = year), 
+              method = "lm", 
+              show.legend = FALSE) +
+  facet_wrap(~continent, scales = "free") +
+  scale_x_log10()+
+  transition_manual(year)# convert to log scale
+
+animate(g, width = 800, height = 400)
+```
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
