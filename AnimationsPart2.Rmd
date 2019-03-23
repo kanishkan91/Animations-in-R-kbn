@@ -1,0 +1,109 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r, Scenario plots}
+
+library(ggplot2)
+library(gganimate)
+library(readxl)
+library (dplyr)
+library(tweenr)
+library(tidyverse)
+library(readxl)
+library(tibble)
+library(ggstance)
+library(gapminder)
+library(shiny)
+library(gifski)
+library(profvis)
+
+Data <- read_csv("C:/Users/Public/Rfiles/Sce.csv", 
+    )
+Base_Data<- data.frame(Data)
+#Base_Data$Region<-rep("Regression for Southern Africa",nrow(Base_Data))
+
+theme_set(theme_bw())
+
+
+g<- ggplot(Base_Data,aes(HDI,Poverty,frame=Year,size=GDP,col=Scenario))+
+    geom_point(data=Base_Data,aes(),show.legend = FALSE)+
+    scale_size_continuous(range = c(0, 15))+
+    geom_text(data=Base_Data,aes(y=Poverty-0.5,x=HDI,label=Scenario),size=3)+
+    geom_text(data=Base_Data,aes(y=10.5,x=1.9,label=as.character(2018+Year2)),size=6)+
+    xlim(c(0,2))+
+    ylim(c(-1,11))+
+    #geom_smooth(aes(group=(Year)),show.legend=TRUE)+
+    coord_cartesian(clip = "off", expand = FALSE) +
+    labs(title='Impact of senarios in Southern Africa',x='Percent increase in HDI (Relative to the Current Path)',y='Percent reduction in poverty (Relative to the Current Path)')+
+    transition_states(Year,transition_length = 1,state_length = 1)+
+    transition_time(Year)+
+    #transition_manual(Year)+
+    ease_aes('cubic-in-out')
+
+
+animate(g,nframes = 300,fps=15, width = 1200, height = 800,res=120)
+
+
+
+```
+
+
+```{r, Scenario plots}
+
+library(ggplot2)
+library(gganimate)
+library(readxl)
+library (dplyr)
+library(tweenr)
+library(tidyverse)
+library(readxl)
+library(tibble)
+library(ggstance)
+library(gapminder)
+library(shiny)
+library(gifski)
+library(profvis)
+
+Data <- read_csv("C:/Users/Public/Rfiles/ForR.csv", 
+    )
+Base_Data<- data.frame(Data)
+#Base_Data$Region<-rep("Regression for Southern Africa",nrow(Base_Data))
+
+Base_Data2<-read_csv("C:/Users/Public/Rfiles/Global.csv", 
+    )
+theme_set(theme_bw())
+
+
+g<- ggplot(Base_Data,aes(GDP2011PCPPP,LifExpectI,frame=Year,col=Continent),show.legend=FALSE)+
+    geom_point(data=Base_Data,aes(),show.legend = FALSE)+
+    scale_size_continuous(range = c(0, 15))+
+    geom_text(data=Base_Data,aes(y=Global+1,x=22,label='Global Average'),size=5)+
+    geom_line(data=Base_Data2,aes(x = 22, y = Global), linetype = 2, colour = 'green')+
+    geom_text(data=Base_Data,aes(y=LifExpectI-0.5,x=GDP2011PCPPP,label=Country),size=3,,show.legend=FALSE)+
+    geom_text(data=Base_Data,aes(y=79,x=25,label=as.character(Year)),size=12,,show.legend=FALSE)+
+    xlim(c(0,22))+
+    ylim(c(30,80))+
+    #geom_smooth(aes(group=(Year)),show.legend=TRUE)+
+    coord_cartesian(clip = "off", expand = FALSE) +
+    labs(title='Comparing income levels and life expectancy in African countries',x='Income in thousand USD',y='Average Life expectancy at birth')+
+    transition_states(Year,transition_length = 1,state_length = 1)+
+    transition_time(Year)+
+    #transition_manual(Year)+
+    ease_aes('cubic-in-out')
+
+
+animate(g,nframes = 300,fps=10, width = 1200, height = 800,res=100)
+
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

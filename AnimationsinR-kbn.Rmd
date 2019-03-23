@@ -33,6 +33,9 @@ library(readxl)
 library(tibble)
 library(ggstance)
 library(gapminder)
+library(shiny)
+library(gifski)
+library(profvis)
 
 
 
@@ -55,8 +58,8 @@ theme_set(theme_bw())
 
 g<- ggplot(Base_Data,aes(GDP2011PCPPP,LifExpectI,frame=Year,size=WorkPop,col=Continent))+
     geom_point(aes(size=WorkPop))+
-    geom_text(data=subset(ForR,Country=='India'|Country=='United States'|Country=='China'),aes(label=Country))+
-    xlim(c(0,18000))+
+    geom_text(data=subset(ForR,Country=='India'|Country=='United States'|Country=='China'),aes(y=LifExpectI-2,label=Country))+
+    xlim(c(0,100000))+
     ylim(c(40,84))+
     geom_smooth(aes(group=(Year)),method="lm",show.legend=TRUE)+
     labs(title='Life expectancy vs GDP per capita:{1959+frame}',x='Income levels in Thousand USD',y='Average life expectancy')+
@@ -66,7 +69,7 @@ g<- ggplot(Base_Data,aes(GDP2011PCPPP,LifExpectI,frame=Year,size=WorkPop,col=Con
     
 
 
-animate(g,nframes = 100,ref_frame = -1,fps=1,, width = 800, height = 400)
+animate(g,nframes = 100,ref_frame = -1,fps=1.5,, width = 800, height = 400)
 
 
 ```
@@ -119,7 +122,7 @@ SSP<- subset(SSP,Variable =="Poverty")
 
 
 SSP= SSP%>%
-     group_by(Year)%>%
+     group_by(Year,Variable)%>%
     mutate(ordering = min_rank(CountryTarget/CountryRegion) * 1.0) %>%
   ungroup()
 
@@ -138,6 +141,7 @@ theme(plot.title = element_text(hjust = 0.5,vjust=2.12, size = 22),axis.ticks.x 
 transition_states(Year, 
                     transition_length = 2, state_length = 1) +
 ease_aes('cubic-in-out')
+
 
 animate(p,nframes=300,fps=20, width = 800, height = 400)
 
@@ -160,6 +164,518 @@ g <- ggplot(gapminder, aes(gdpPercap, lifeExp, size = pop, frame = year)) +
 
 animate(g, width = 800, height = 400)
 ```
+
+```{r, EPL visualization , all teams (moving line graph)}
+
+
+
+EPLData<- read.csv('C:/Users/Public/Rfiles/EPL.csv')
+
+EPLData<- data.frame(EPLData)
+
+EPLData$Date <- as.factor(EPLData$Date)
+
+
+EPLData<- EPLData%>%
+  group_by(Week)%>%
+  mutate(ordering = min_rank(-Cumulativepoints) * 1.0) %>%
+  ungroup()
+
+
+
+p=ggplot(EPLData, aes(x=MatchDay, y=Cumulativepoints, group = Team,color=Team)) + 
+  geom_line(aes(fill=Team)) + 
+  geom_point(size = 2) + 
+  geom_text((aes(y=100,x=0,label='August'))) +
+  geom_text((aes(y=100,x=25,label='October')))+
+  geom_text((aes(y=100,x=50,label='December')))+
+  geom_text((aes(y=100,x=75,label='March')))+
+  geom_text((aes(y=100,x=100,label='May')))+
+  
+  geom_text(data=subset(EPLData,Team=='Leicester City'),aes(y=90,label=Match)) +
+  geom_text(data=subset(EPLData,Team=='Leicester City'),aes(y=86,label=paste('Points-',Cumulativepoints))) +
+  geom_text(data=subset(EPLData,Team=='Leicester City'|Team=='Arsenal FC'|Team=='Tottenham'),aes(x=110,label=Team))+
+  geom_segment(data=subset(EPLData,Team=='Leicester City'|Team=='Arsenal FC'|Team=='Tottenham'),aes(xend = 110, yend = Cumulativepoints,label=Team), linetype = 2, colour = 'grey') + 
+  transition_reveal(Team,MatchDay) + 
+  coord_cartesian(clip = 'off') + 
+  labs(title = 'Month', y = 'Cumulative points')+ 
+  theme_minimal()+
+  labs(caption='Prepared by KBN',title="Leicester Winning the League in 2015-2016!!",x="Match Day",y="Cumulative points earned",size = 15,vjust=2)+
+  theme(legend.position = "none")
+  
+animate(p,nframes=110,fps=3, width = 820, height = 400)
+
+      
+  
+  
+```
+
+```{r, air quality visualization (Taken from gganimate examples)}
+
+airq <- airquality
+anim4 <- ggplot(airquality, aes(Day, Temp)) +
+  geom_line(aes(group = Month)) +
+  transition_time(Month) +
+  enter_fade() +
+  exit_fade()
+animate(anim4,nframes = 100,fps=3, width = 820, height = 400)
+```
+
+```{r, EPL visualization (moving line graph)}
+EPLData<- read.csv('C:/Users/Public/Rfiles/EPLGr.csv',)
+
+EPLData<- data.frame(EPLData)
+
+EPLData$Date <- as.factor(EPLData$Date)
+
+
+
+p=ggplot(EPLData, aes(x=MatchDay, y=Cumulativepoints, group = Team,color=Team)) + 
+  geom_line(aes(fill=Team)) + 
+  geom_point(size = 2) + 
+  geom_text((aes(y=100,x=0,label='August'))) +
+  geom_text((aes(y=100,x=25,label='September')))+
+  geom_text((aes(y=100,x=50,label='November')))+
+  geom_text((aes(y=100,x=75,label='January')))+
+  geom_text((aes(y=100,x=100,label='February')))+
+  geom_text((aes(y=100,x=125,label='April')))+
+  geom_text((aes(y=100,x=140,label='May')))+
+  #geom_text(data=subset(EPLData,Team=='Leicester City'),aes(y=86,label=paste('Points-',Cumulativepoints))) +
+  geom_text(aes(x=150,label=Team))+
+  geom_segment(aes(xend = 150, yend = Cumulativepoints,label=Team), linetype = 2, colour = 'grey') + 
+  transition_reveal(Team,MatchDay) + 
+  coord_cartesian(clip = 'off') + 
+  labs(title = 'Month', y = 'Cumulative points')+ 
+  theme_minimal()+
+  labs(caption='Prepared by KBN',title="Comparing the greatest in the EPL",x="Match Day",y="Cumulative points earned",size = 15,vjust=2)+
+  enter_fade() +
+  exit_fade()
+
+animate(p,nframes=110,fps=4, width = 820, height = 400)
+
+```
+
+```{r, maps using geosphere and maps}
+library(maps)
+library(geosphere)
+library("igraph")
+library(ggplot2)
+library(shiny)
+library(visNetwork)
+library(rsconnect)
+library(dplyr)
+
+
+airports<- read.csv('C:/Users/Public/Rfiles/Airports.csv')
+flights<- read.csv('C:/Users/Public/Rfiles/Flights.csv')
+
+input<-list("India")
+flights1<- subset(flights, (flights$FromCountry=="Malawi"))
+      flights2<- subset(flights, (flights$ToCountry=="Malawi"))
+      flights3<- rbind(flights1,flights2)
+      flights3<- (unique(flights3[,1:6]))
+      airports1<- subset(airports,(airports$ID %in% flights3$From))
+      airports2<- subset(airports,(airports$ID %in% flights3$To))
+      airports3<- rbind(airports1,airports2)
+      airports3<- (unique(airports3[,1:7]))
+      
+
+
+map("world",col="grey20",fill=TRUE,bg="black",lwd=0.1)
+map.scale(relwidth = 1.2)
+
+
+
+points(x=airports3$Longitude,y=airports3$Latitude,pch=19,col="orange",cex=(0.1))
+
+col.1 <- adjustcolor("orange red", alpha=0.4)
+col.2 <- adjustcolor("orange", alpha=0.4)
+edge.pal <- colorRampPalette(c(col.1, col.2), alpha = TRUE)
+edge.col <- edge.pal(100)
+
+
+
+for(i in 1:nrow(flights3))  {
+    node1 <- airports3[airports3$ID == flights3[i,]$From,]
+    node2 <- airports3[airports3$ID == flights3[i,]$To,]
+    
+    arc <- gcIntermediate( c(node1[1,]$Longitude, node1[1,]$Latitude), 
+                           c(node2[1,]$Longitude, node2[1,]$Latitude), 
+                           n=1000, addStartEnd=TRUE )
+    edge.ind <- round(10.5)
+    
+    lines(arc, col=edge.col[edge.ind], lwd=edge.ind/30)
+}
+
+
+```
+```{r, maps using ggplot2}
+library(maps)
+library(geosphere)
+library("igraph")
+library(ggplot2)
+library(shiny)
+library(visNetwork)
+library(rsconnect)
+library(dplyr)
+
+
+airports<- read.csv('C:/Users/Public/Rfiles/Airports.csv')
+flights<- read.csv('C:/Users/Public/Rfiles/Flights.csv')
+
+input<-list("Hartsfield Jackson Atlanta International Airport")
+print(input)
+flights1<- subset(flights, (flights$FromCity %in% (input)))
+      flights2<- subset(flights, (flights$ToCity==as.list(input)))
+      flights3<- rbind(flights1,flights2)
+      flights3<- (unique(flights3[,1:6]))
+      airports1<- subset(airports,(airports$ID %in% flights3$From))
+      airports2<- subset(airports,(airports$ID %in% flights3$To))
+      airports3<- rbind(airports1,airports2)
+      airports3<- (unique(airports3[,1:7]))
+      
+
+mp <- NULL
+mapWorld <- borders("world", colour="grey20", fill="black",bg="black",lwd=0.1) # create a layer of borders
+mp <- ggplot() 
+
+p <- mp+ geom_point(aes(x=airports3$Longitude,y=airports3$Latitude) ,color="red", size=2.5,alpha=0.5) 
+
+col.1 <- adjustcolor("orange red", alpha=0.4)
+col.2 <- adjustcolor("orange", alpha=0.4)
+edge.pal <- colorRampPalette(c(col.1, col.2), alpha = TRUE)
+edge.col <- edge.pal(100)
+
+
+
+for(i in 1:nrow(flights3))  {
+    node1 <- airports3[airports3$ID == flights3[i,]$From,]
+    node2 <- airports3[airports3$ID == flights3[i,]$To,]
+    
+    inter<- data.frame(gcIntermediate( c(node1[1,]$Longitude, node1[1,]$Latitude), 
+                           c(node2[1,]$Longitude, node2[1,]$Latitude), 
+                           n=50, addStartEnd=TRUE ))
+    names(inter)<- c("lon","lat")
+    
+    p <- p + geom_line(data=inter, aes(x=lon, y=lat), color='purple',alpha=0.5,size=1)+theme_grey()+xlab("Longitude")+ylab("Latitude")
+}
+
+
+
+
+plot(p)
+
+
+
+
+```
+
+```{r}
+
+library(maps)
+library(geosphere)
+library("igraph")
+library(ggplot2)
+library(shiny)
+library(visNetwork)
+library(rsconnect)
+library(dplyr)
+
+
+airports<- read.csv('C:/Users/Public/Rfiles/Airports.csv')
+flights<- read.csv('C:/Users/Public/Rfiles/Flights.csv')
+
+input<-list("Charles de Gaulle International Airport","Hartsfield Jackson Atlanta International Airport","London Heathrow Airport","Beijing Capital International Airport","Chicago O'Hare International Airport")
+flights1<- subset(flights, (flights$FromCity=="Charles de Gaulle International Airport"))
+flights2<- subset(flights, (flights$FromCity=="Hartsfield Jackson Atlanta International Airport"))
+flights5<- subset(flights, (flights$FromCity=="London Heathrow Airport"))
+flights6<- subset(flights, (flights$FromCity=="Beijing Capital International Airport"))
+flights7<- subset(flights, (flights$FromCity=="Chicago O'Hare International Airport"))
+      flights3<- rbind(flights1,flights2,flights5,flights6,flights7)
+      flights3<- (unique(flights3[,1:6]))
+      airports1<- subset(airports,(airports$ID %in% flights3$From))
+      airports2<- subset(airports,(airports$ID %in% flights3$To))
+      airports3<- rbind(airports1,airports2)
+      airports3<- (unique(airports3[,1:7]))
+      
+
+mp <- NULL
+mapWorld <- borders("world", colour="grey20", fill="black",bg="black",lwd=0.1) # create a layer of borders
+mp <- ggplot() +mapWorld
+
+p <- mp+ geom_point(aes(x=airports3$Longitude,y=airports3$Latitude) ,color="red", size=2.5,alpha=0.5) 
+
+# Finished plotting points here
+
+col.1 <- adjustcolor("orange red", alpha=0.4)
+col.2 <- adjustcolor("orange", alpha=0.4)
+edge.pal <- colorRampPalette(c(col.1, col.2), alpha = TRUE)
+edge.col <- edge.pal(100)
+
+
+flights4<- subset(flights3,(flights3$FromCity=="Hartsfield Jackson Atlanta International Airport"))
+for(i in 1:nrow(flights4))  {
+    node1 <- airports3[airports3$ID == flights4[i,]$From,]
+    node2 <- airports3[airports3$ID == flights4[i,]$To,]
+    
+    inter1<- data.frame(gcIntermediate( c(node1[1,]$Longitude, node1[1,]$Latitude), 
+                           c(node2[1,]$Longitude, node2[1,]$Latitude), 
+                           n=50, addStartEnd=TRUE ))
+    names(inter1)<- c("lon","lat")
+    
+    p <- p+geom_line(data=inter1, aes(x=lon, y=lat), alpha=0.5,size=1,color="green")
+}
+
+flights4<- subset(flights3,(flights3$FromCity=="Chicago O'Hare International Airport"))
+for(i in 1:nrow(flights4))  {
+    node1 <- airports3[airports3$ID == flights4[i,]$From,]
+    node2 <- airports3[airports3$ID == flights4[i,]$To,]
+    
+    inter2<- data.frame(gcIntermediate( c(node1[1,]$Longitude, node1[1,]$Latitude), 
+                           c(node2[1,]$Longitude, node2[1,]$Latitude), 
+                           n=50, addStartEnd=TRUE ))
+    names(inter2)<- c("lon","lat")
+    
+    p <- p+geom_line(data=inter2, aes(x=lon, y=lat), alpha=0.5,size=1,color="blue")
+}
+
+flights4<- subset(flights3,(flights3$FromCity=="London Heathrow Airport"))
+for(i in 1:nrow(flights4))  {
+    node1 <- airports3[airports3$ID == flights4[i,]$From,]
+    node2 <- airports3[airports3$ID == flights4[i,]$To,]
+    
+    inter3<- data.frame(gcIntermediate( c(node1[1,]$Longitude, node1[1,]$Latitude), 
+                           c(node2[1,]$Longitude, node2[1,]$Latitude), 
+                           n=50, addStartEnd=TRUE ))
+    names(inter3)<- c("lon","lat")
+    
+    p <- p+geom_line(data=inter3, aes(x=lon, y=lat), alpha=0.5,size=1,color="white")
+}
+
+flights4<- subset(flights3,(flights3$FromCity=="Charles de Gaulle International Airport"))
+for(i in 1:nrow(flights4))  {
+    node1 <- airports3[airports3$ID == flights4[i,]$From,]
+    node2 <- airports3[airports3$ID == flights4[i,]$To,]
+    
+    inter4<- data.frame(gcIntermediate( c(node1[1,]$Longitude, node1[1,]$Latitude), 
+                           c(node2[1,]$Longitude, node2[1,]$Latitude), 
+                           n=50, addStartEnd=TRUE ))
+    names(inter4)<- c("lon","lat")
+    
+    p <- p+geom_line(data=inter4, aes(x=lon, y=lat), alpha=0.5,size=1,color="purple")
+}
+
+
+flights4<- subset(flights3,(flights3$FromCity=="Beijing Capital International Airport"))
+for(i in 1:nrow(flights4))  {
+    node1 <- airports3[airports3$ID == flights4[i,]$From,]
+    node2 <- airports3[airports3$ID == flights4[i,]$To,]
+    
+    inter5<- data.frame(gcIntermediate( c(node1[1,]$Longitude, node1[1,]$Latitude), 
+                           c(node2[1,]$Longitude, node2[1,]$Latitude), 
+                           n=50, addStartEnd=TRUE ))
+    names(inter5)<- c("lon","lat")
+    
+    p <- p+geom_line(data=inter5, aes(x=lon, y=lat), alpha=0.5,size=1,color="orange")
+}
+
+
+
+p<- p+xlab("Longitude")+ylab("Latitude")+theme_dark()
+
+plot(p)
+
+```
+
+```{r, maps using leaflet}
+library(sp)
+library(maps)
+library(maptools)
+library(leaflet)
+library(geosphere)
+library("igraph")
+library(ggplot2)
+library(shiny)
+library(visNetwork)
+library(rsconnect)
+library(dplyr)
+
+
+
+world <- map("world", fill=TRUE, plot=FALSE)
+world_map <- map2SpatialPolygons(world, sub(":.*$", "", world$names))
+world_map <- SpatialPolygonsDataFrame(world_map,
+                                      data.frame(country=names(world_map), 
+                                                 stringsAsFactors=FALSE), 
+                                      FALSE)
+
+airports<- read.csv('C:/Users/Public/Rfiles/Airports.csv')
+flights<- read.csv('C:/Users/Public/Rfiles/Flights.csv')
+
+
+flights1<- subset(flights, (flights$FromCity=="Beijing Capital International Airport"))
+      flights2<- subset(flights, (flights$ToCity=="Beijing Capital International Airport"))
+      flights3<- rbind(flights1,flights2)
+      flights3<- (unique(flights3[,1:6]))
+      airports1<- subset(airports,(airports$ID %in% flights3$From))
+      airports2<- subset(airports,(airports$ID %in% flights3$To))
+      airports3<- rbind(airports1,airports2)
+      airports3<- (unique(airports3[,1:7]))
+      
+for(i in 1:nrow(flights3))  {
+    node1 <- airports3[airports3$ID == flights3[i,]$From,]
+    #node1$City<-airports3[airports3$City==flights3[i,]$FromCity]
+    node2 <- airports3[airports3$ID == flights3[i,]$To,]
+    #node2$city<-airports3[airports3$City==flight]
+    
+    inter<- data.frame(gcIntermediate( c(node1[1,]$Longitude, node1[1,]$Latitude), 
+                           c(node2[1,]$Longitude, node2[1,]$Latitude), 
+                           n=50, addStartEnd=TRUE ),node1$City,node2$City)
+    names(inter)<- c("lon","lat","FromCity","ToCity")
+    
+    p <- p + geom_line(data=inter, aes(x=lon, y=lat), color='orange')
+}
+
+inter$group<-seq.int(nrow(inter))      
+      
+
+target<- subset(world_map,country %in% airports3$Country)
+
+m<-leaflet(target) %>% 
+  addPolygons(weight=1)%>%
+  addTiles() %>% 
+  addPolylines(data=inter,lng=inter$lon,lat = inter$lat)
+    
+
+
+
+m
+   
+```
+```{r, sankey Network in R}
+library(networkD3)
+library(htmlwidgets)
+library(rbokeh)
+
+Links<-read.csv('C:/Users/Public/Rfiles/LinksSankey.csv')
+Links<- subset(Links,Links$Year=='2015')
+Links<- subset(Links, Links$Country=='El Salvador')
+Links<- data.frame(Links)
+
+
+Nodes<-read.csv('C:/Users/Public/Rfiles/NodesSankey.csv')
+Nodes<- subset(Nodes,Nodes$Year=='2015')
+Nodes<- subset(Nodes,Nodes$Country=="El Salvador")
+Nodes<- data.frame(Nodes)
+Sankey<- list(Links,Nodes)
+
+sankeyNetwork(Links=Links,Nodes=Nodes,Source = 'Source1',
+              Target = 'Target1', Value = 'Value', NodeID = 'Name2',
+              units = "Percent", fontSize = 14, nodeWidth = 25,sinksRight = FALSE,height=900,width=1200)
+#widget2png(sn,"Sankey.png")
+
+#saveNetwork(sn, "SankeyIndia.html",selfcontained = TRUE)
+```
+
+```{r}
+library(colorspace)
+library(collapsibleTree) 
+library(visNetwork)
+library(htmlwidgets)
+
+ 
+# input data must be a nested data frame:
+#View(warpbreaks)
+ 
+Conflict<- read.csv('C:/Users/Public/Rfiles/Conflict.csv')
+# Represent this tree:
+Col<- read.csv('C:/Users/Public/Rfiles/Colors.csv')
+Col12<- as.vector(Col$Col3) 
+Col2<- read.csv('C:/Users/Public/Rfiles/Col2.csv')
+col23<-as.vector(Col2$Col4)
+#Conflict$Color<-Conflict$Main
+#levels(Conflict$Color)<-colorspace::rainbow_hcl(11)
+
+   
+c2<-collapsibleTree( Conflict, c("Source", "Main", "Factor"),width=1000,height=600,fill=c("seashell",rep("grey",length(unique(Conflict$Source))),Col12,col23))
+
+
+saveNetwork(c2,"ConflictTreePlotFinal.html",selfcontained = TRUE)
+
+```
+
+
+```{r}
+library(colorspace)
+library(collapsibleTree) 
+library(visNetwork)
+library(htmlwidgets)
+
+ 
+# input data must be a nested data frame:
+#View(warpbreaks)
+
+Conflict$Color<-Conflict$Main
+levels(Conflict$Color)<-colorspace::rainbow_hcl(11)
+
+a<- unique(Conflict$Main)
+print(a)
+ 
+Conflict<- read.csv('C:/Users/Public/Rfiles/Conflict.csv')
+# Represent this tree:
+Col<- read.csv('C:/Users/Public/Rfiles/Colors.csv')
+Col12<- as.vector(Col$Col3) 
+Col2<- read.csv('C:/Users/Public/Rfiles/Col2.csv')
+col23<-as.vector(Col2$Col4)
+
+   
+c2<-collapsibleTree( Conflict, c("Source", "Main", "Factor"),width=1000,height=600,fill=c("seashell",rep("grey",length(unique(Conflict$Source))),Col12,col23))
+
+
+c2
+
+```
+
+```{r}
+library(colorspace)
+library(collapsibleTree) 
+library(visNetwork)
+library(htmlwidgets)
+#library(colorspace)
+#library(tidyverse)
+
+ 
+#Read dataframe
+Conflict<- read.csv('C:/Users/Public/Rfiles/Anish.csv')
+
+#kbn- start code for color determination  
+ if (length(unique(Conflict$Main[is.null(Conflict$Main)]))>0){
+Col1<- as.vector(rep('dodgerblue',(length(unique(Conflict$Main))-1)))
+}else {
+Col1<- as.vector(rep('dodgerblue',(length(unique(Conflict$Main)))))  
+}
+  
+if (length(unique(Conflict$Factor[is.null(Conflict$Factor)]))>0){
+Col2<- as.vector(rep('cornflowerblue',(length(unique(Conflict$Factor))-1)))
+}else {
+Col2<- as.vector(rep('cornflowerblue',(length(unique(Conflict$Factor)))))  
+}
+
+if (length(unique(Conflict$Factor2[is.null(Conflict$Factor2)]))>0){
+Col3<- as.vector(rep('deepskyblue',(length(unique(Conflict$Factor2))-1)))
+}else {
+Col3<- as.vector(rep('deepskyblue',(length(unique(Conflict$Factor2)))))  
+}
+#kbn- End code for color determination
+
+#Final
+c2<-collapsibleTree( Conflict, c("Main", "Factor","Factor2"),width=1000,height=600,root="SAMA Audit Systems",fill=c("darkblue",Col1,Col2,Col3))
+
+c2
+#saveNetwork(c2,"SAMA.html",selfcontained = TRUE)
+
+```
+
 
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
